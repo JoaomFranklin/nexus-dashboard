@@ -1,0 +1,32 @@
+diff --git a/node_modules/@supabase/auth-js/dist/main/lib/helpers.js b/node_modules/@supabase/auth-js/dist/main/lib/helpers.js
+index 115925c..3a2d115 100644
+--- a/node_modules/@supabase/auth-js/dist/main/lib/helpers.js
++++ b/node_modules/@supabase/auth-js/dist/main/lib/helpers.js
+@@ -259,7 +259,10 @@ async function generatePKCEChallenge(verifier) {
+         return verifier;
+     }
+     const hashed = await sha256(verifier);
+-    return btoa(hashed).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
++    const base64 = typeof Buffer !== 'undefined'
++        ? Buffer.from(hashed, 'binary').toString('base64')
++        : btoa(hashed);
++    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+ }
+ async function getCodeChallengeAndMethod(storage, storageKey, isPasswordRecovery = false) {
+     const codeVerifier = generatePKCEVerifier();
+diff --git a/node_modules/@supabase/auth-js/dist/module/lib/helpers.js b/node_modules/@supabase/auth-js/dist/module/lib/helpers.js
+index fa16757..b8d5863 100644
+--- a/node_modules/@supabase/auth-js/dist/module/lib/helpers.js
++++ b/node_modules/@supabase/auth-js/dist/module/lib/helpers.js
+@@ -231,7 +231,10 @@ export async function generatePKCEChallenge(verifier) {
+         return verifier;
+     }
+     const hashed = await sha256(verifier);
+-    return btoa(hashed).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
++    const base64 = typeof Buffer !== 'undefined'
++        ? Buffer.from(hashed, 'binary').toString('base64')
++        : btoa(hashed);
++    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+ }
+ export async function getCodeChallengeAndMethod(storage, storageKey, isPasswordRecovery = false) {
+     const codeVerifier = generatePKCEVerifier();
