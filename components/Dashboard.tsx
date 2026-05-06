@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 import SearchBar from "./SearchBar";
 import WeatherCard from "./cards/WeatherCard";
@@ -84,8 +83,7 @@ export default function Dashboard({ user }: Props) {
   }, [fetchAll]);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch("/api/auth/signout", { method: "POST" });
     router.push("/login");
     router.refresh();
   };
