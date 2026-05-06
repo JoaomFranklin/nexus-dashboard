@@ -32,7 +32,7 @@ export default function DayNightCard() {
     <div className="glass-card p-6 animate-fade-in">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-          Horário • Foz do Iguaçu
+          Horário • Quedas do Iguaçu
         </h3>
         <span className="text-lg">{isDay ? "☀️" : "🌙"}</span>
       </div>

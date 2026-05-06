@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-const FOZ_LAT = -25.5469;
-const FOZ_LON = -54.5882;
+// Quedas do Iguaçu — PR, Brasil
+const LAT = -25.4472;
+const LON = -53.0108;
 const COLD_THRESHOLD = 18;
 
 export async function GET() {
@@ -15,40 +16,28 @@ export async function GET() {
   }
 
   try {
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${FOZ_LAT}&lon=${FOZ_LON}&appid=${apiKey}&units=metric&lang=pt_br`;
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${apiKey}&units=metric&lang=pt_br`;
     const res = await fetch(url, { next: { revalidate: 300 } });
-
-    if (!res.ok) throw new Error(`OpenWeather API error: ${res.status}`);
-
+    if (!res.ok) throw new Error(`OpenWeather error: ${res.status}`);
     const data = await res.json();
 
     const temp = Math.round(data.main.temp);
     const feelsLike = Math.round(data.main.feels_like);
-    const humidity = data.main.humidity;
-    const description = data.weather[0].description;
-    const icon = data.weather[0].icon;
-
-    // Day/Night based on sunrise/sunset from the city
     const now = Math.floor(Date.now() / 1000);
     const isDay = now >= data.sys.sunrise && now <= data.sys.sunset;
 
     return NextResponse.json({
-      city: "Foz do Iguaçu",
+      city: "Quedas do Iguaçu",
       temp,
       feelsLike,
-      humidity,
-      description,
-      icon,
+      humidity: data.main.humidity,
+      description: data.weather[0].description,
+      icon: data.weather[0].icon,
       isCold: temp < COLD_THRESHOLD,
       isDay,
-      sunrise: data.sys.sunrise,
-      sunset: data.sys.sunset,
     });
   } catch (error) {
-    console.error("[weather] fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch weather data" },
-      { status: 502 }
-    );
+    console.error("[weather]", error);
+    return NextResponse.json({ error: "Failed to fetch weather" }, { status: 502 });
   }
 }

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 
-// Bitcoin via CoinGecko (free, no key needed)
 async function fetchBitcoin() {
   const res = await fetch(
-    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true",
+    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true",
     { next: { revalidate: 60 } }
   );
   if (!res.ok) throw new Error("CoinGecko error");
@@ -16,57 +15,40 @@ async function fetchBitcoin() {
   };
 }
 
-// Stocks via Finnhub (requires FINNHUB_API_KEY)
-async function fetchStock(symbol: string, name: string) {
-  const apiKey = process.env.FINNHUB_API_KEY;
-  if (!apiKey) throw new Error("FINNHUB_API_KEY not configured");
-
-  const [quoteRes, profileRes] = await Promise.all([
-    fetch(
-      `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`,
-      { next: { revalidate: 60 } }
-    ),
-    fetch(
-      `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${apiKey}`,
-      { next: { revalidate: 3600 } }
-    ),
-  ]);
-
-  if (!quoteRes.ok) throw new Error(`Finnhub error for ${symbol}`);
-
-  const quote = await quoteRes.json();
-  const profile = profileRes.ok ? await profileRes.json() : {};
-
-  const change24h = quote.pc > 0 ? ((quote.c - quote.pc) / quote.pc) * 100 : 0;
-
-  return {
-    symbol,
-    name: profile.name || name,
-    price: quote.c,
-    change24h,
-    high: quote.h,
-    low: quote.l,
-    previousClose: quote.pc,
-  };
+async function fetchYahooStock(symbol: string, name: string) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0" },
+    next: { revalidate: 60 },
+  });
+  if (!res.ok) throw new Error(`Yahoo Finance error for ${symbol}: ${res.status}`);
+  const data = await res.json();
+  const meta = data?.chart?.result?.[0]?.meta;
+  if (!meta) throw new Error(`No data for ${symbol}`);
+  const price = meta.regularMarketPrice ?? meta.postMarketPrice;
+  const prev = meta.chartPreviousClose ?? meta.previousClose;
+  const change24h = prev > 0 ? ((price - prev) / prev) * 100 : 0;
+  return { symbol, name, price, change24h };
 }
 
 export async function GET() {
   const results = await Promise.allSettled([
     fetchBitcoin(),
-    fetchStock("GS", "Goldman Sachs"),
-    fetchStock("LMT", "Lockheed Martin"),
+    fetchYahooStock("GS", "Goldman Sachs"),
+    fetchYahooStock("LMT", "Lockheed Martin"),
   ]);
 
-  const data = results.map((r, i) => {
+  const fallbacks = [
+    { symbol: "BTC", name: "Bitcoin" },
+    { symbol: "GS", name: "Goldman Sachs" },
+    { symbol: "LMT", name: "Lockheed Martin" },
+  ];
+
+  const assets = results.map((r, i) => {
     if (r.status === "fulfilled") return r.value;
-    const fallback = [
-      { symbol: "BTC", name: "Bitcoin" },
-      { symbol: "GS", name: "Goldman Sachs" },
-      { symbol: "LMT", name: "Lockheed Martin" },
-    ][i];
-    console.error(`[financial] failed to fetch ${fallback.symbol}:`, r.reason);
-    return { ...fallback, price: null, change24h: null, error: true };
+    console.error(`[financial] ${fallbacks[i].symbol}:`, r.reason?.message);
+    return { ...fallbacks[i], price: null, change24h: null, error: true };
   });
 
-  return NextResponse.json({ assets: data, updatedAt: new Date().toISOString() });
+  return NextResponse.json({ assets, updatedAt: new Date().toISOString() });
 }

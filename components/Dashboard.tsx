@@ -140,8 +140,7 @@ export default function Dashboard({ user }: Props) {
 
         {/* Footer */}
         <footer className="mt-8 text-center text-[11px] text-zinc-600">
-          Dados financeiros: CoinGecko + Finnhub · Clima: OpenWeatherMap ·
-          Conteúdos de simulação são 100% fictícios para entretenimento
+          Dados financeiros: CoinGecko + Yahoo Finance · Clima: OpenWeatherMap · Quedas do Iguaçu
         </footer>
       </div>
     </div>
